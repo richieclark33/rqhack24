@@ -145,7 +145,7 @@ watch(spot, (v) => {
         animate(wrapper2.value, {opacity: 1 }, {duration: .2, delay:1})
         animate(secondLoader.value, {width: "100%" }, {duration: 2, delay:1})
         animate(wrapper3.value, {opacity: 1 }, {duration: .2, delay:3})
-        finalAnimation = animate(thirdLoader.value, {width: "100%" }, {duration: 20, delay:3})
+        finalAnimation = animate(thirdLoader.value, {width: "100%" }, {duration: 30, delay:3})
         }, 1000);
       setTimeout(finalize, 8000);
     });
