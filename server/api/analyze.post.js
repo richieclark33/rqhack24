@@ -26,76 +26,114 @@ export default defineEventHandler(async (event) => {
   });
         //   //   // Analyze with OpenAI
     const response = await client.chat.completions.create({
-      messages: [{
-      role: "system",
-        content:`You are a language model trained to analyze legal and financial documents, specifically Closing Disclosure Forms (CDF). 
-        Your task is to assist the user in reviewing a CDF to ensure its accuracy and compliance. When a PDF of the CDF is uploaded, 
-        you will analyze the document, keeping in mind that the tabular formatting may not be preserved in the extracted text.
-        Follow these steps to analyze the data accurately:
-        1. Avoid Redundancy and Repetition:
-          - Do not repeat information or data points. Each unique item should be mentioned only once unless additional clarification is necessary. 
-            If a section or item is listed multiple times in the document, reference it once and avoid re-listing or repeating it.
-          - If the data appears in multiple sections or is similar in content (e.g., "Total Due from Borrower at Closing" or "Escrow Payments"), 
-            summarize it clearly and do not echo it unnecessarily.
-        2. Extract Key Information:
-          - Identify and extract relevant data points, including but not limited to:
-            - Loan amount
-            - Interest rate
-            - Closing costs (both 'At closing' and 'Before closing' sections)
-            - Total cost at closing
-            - Prepaid items or escrow amounts
-            - Credits or adjustments
-        3. Handle Extracted Text Properly:
-          - Since the tabular format is not preserved in the text extraction, ensure you correctly interpret and organize the "At closing" and "Before closing" 
-            data even if they appear as plain text. Look for textual markers such as "At closing" and "Before closing" to separate the relevant data for each column.
-          - The amounts associated with "Borrower-Paid" and "Seller-Paid" items may appear in the same sections, but they should not be confused with each other. 
-            Be sure to differentiate between these categories when comparing the two columns.
-        4. Check for Discrepancies and Inconsistencies:
-          - Total closing costs:
-             - Add the amounts from both the "At closing" and "Before closing" columns to calculate the total closing costs. Ensure that all relevant subtotals from
-               both columns are included in this calculation.
-            - If the subtotals are not explicitly labeled, extract the amounts based on their context and groupings within the document.
-            - Compare the sum of the "At closing" and "Before closing" totals to the final total listed in the Closing Disclosure Form (CDF). Confirm that the combined total 
-              from both columns matches the overall closing cost total provided in the CDF.
-          - Discrepancies in totals: If the total closing costs, or any related subtotals, do not match between sections or seem inconsistent, detail the specific amounts 
-            that are misaligned. List the sections or line items from which these totals are derived, such as "At closing: $X (closing cost subtotal) from section 100" and 
-            "Before closing: $Y (closing cost subtotal) from section 200."
-          - Credits: Identify and properly account for any credits or adjustments mentioned in either column. Ensure these credits are applied correctly in both the 
-            "Before closing" and "At closing" sections, as they may impact the total costs.
-          - Subtotals: Ensure all subtotals from various sections are accurately calculated and that they contribute correctly to the final totals. Pay special attention to
-            how credits, costs, and adjustments are factored into these subtotals.
-        5. Provide Detailed Discrepancy Identification:
-          - If discrepancies are found, provide a clear and detailed list:
-          - List specific sections or amounts that are inconsistent or misaligned between the columns. For example:
-            - "At closing: $X (total closing costs) from 'Loan Costs' section"
-            - "Before closing: $Y (total closing costs) from 'Other Costs' section"
-          - Clarify where amounts are derived from and explain any differences: For instance, "The $X from section 100 (At closing) should match the $Y in section 200 (Before closing),
-            but there is a discrepancy."
-        6. Clarify Consistency and Accuracy:
-          - Flag only discrepancies that cannot be explained by other sections or totals. If an amount is accounted for in both the "Before closing" and "At closing" sections,
-            do not flag it as a problem unless the amounts do not align correctly.
-          - Do not flag items as discrepancies if they are consistent across sections or accurately reflect adjustments or credits.
-        7. Be Thorough but Clear:
-          - Provide a comprehensive analysis of the data, but ensure the explanations are clear and easy to follow. Use specific references to the amounts, sections,
-            and line items involved in your analysis.
-          - Avoid vague terms like "negative values" or "miscellaneous adjustments." Always provide concrete references to the exact figures. For example:
-            - "The $500 credit listed in Section 2 should offset the $500 cost in Section 3."
-            - "The $300 subtotal in the 'Loan Costs' section (line 103) needs to be added to the total in 'Before closing' under 'Other Costs.'"
-        8. Final Output:
-          - Your goal is to deliver a clean, concise, and non-repetitive summary of the Closing Disclosure Form. Each item should only be discussed once unless additional
-            clarification or further explanation is required. Ensure that the analysis is free from unnecessary repetition or duplication.`
-      },
-      {
-        role: "user",
-        content: `Please review this Closing Disclosure Form (CDF) and provide insights on the following:
-                  1. Key Financial Information: Summarize the loan amount, interest rate, closing costs (both "At closing" and "Before closing"), total costs at closing,
-                     escrow items, and any credits or adjustments.
-                  2. Discrepancies or Inconsistencies: Identify any misalignments between the "At closing" and "Before closing" sections, especially in the calculation of 
-                     total closing costs, credits, or other related items.
-                  3. Accuracy of Totals: Verify that all totals, including subtotals, credits, and adjustments, are correct and match the final closing cost total.
-                  Please ensure the analysis is clear, concise, and based on the document’s content, without repeating data unnecessarily. If discrepancies are found, provide
-                  specific references to the affected sections and figures. : ${result.text}`
-      }],
+      messages: [
+        {
+          role: "system",
+          content:  `You are a language model trained to analyze legal and financial documents, specifically Closing Disclosure Forms (CDF). 
+                    When a PDF of the CDF is uploaded, you will analyze the document, keeping in mind that tabular formatting may not be 
+                    preserved in the extracted text. Follow these steps:
+                    1. Avoid Redundancy:
+                      Only mention unique items once unless further clarification is needed. Do not repeat sections or items listed multiple times in the document.
+                      If an item appears in several places (e.g., "Total Due from Borrower"), summarize it without unnecessary repetition.
+                    2. Extract Key Information:
+                      - Identify and extract key data points, such as but not limited to:
+                        - Closing Date
+                        - Disbursement Date
+                        - Seller Name
+                        - Loan amount
+                        - Load ID
+                        - Loan Term
+                        - Interest rate
+                        - Closing costs (both "At closing" and "Before closing")
+                        - Prepaid items or escrow amounts
+                        - Credits or adjustments
+                    3. Interpret Extracted Text Properly:
+                      - Since the tabular format may be lost, ensure you separate and interpret the "At closing" and "Before closing" data, even if 
+                        it appears as plain text.
+                      - Differentiate between "Borrower-Paid" and "Seller-Paid" items in both columns when performing calculations.
+                    4 Verify Total Closing Costs:
+                      - Sum the "At closing" and "Before closing" columns: Add the relevant amounts from both columns to calculate total closing costs.
+                      - If subtotals are not clearly marked, extract amounts based on their context and groupings.
+                      - Compare totals: Ensure that the sum of the "At closing" and "Before closing" columns matches the final total closing costs as listed in the CDF.
+                    5. Check for Discrepancies and Inconsistencies:
+                      - If totals or subtotals don’t match between sections, detail the specific amounts and sections. For example:
+                        - "At closing: $X from 'Loan Costs' section"
+                        - "Before closing: $Y from 'Other Costs' section"
+                      - Identify how credits or adjustments affect the totals in both columns and ensure they are correctly applied.
+                      - Ensure all subtotals are accurate and contribute correctly to the final totals.
+                    6. Detailed Discrepancy Identification:
+                      - If discrepancies are found, clearly list the specific sections or line items involved, such as:
+                        - "At closing: $500 from 'Loan Costs' (line 103)"
+                        - "Before closing: $500 from 'Other Costs' (line 204)"
+                      - Clarify where the discrepancy arises and provide context for how totals should be derived.
+                    7. Clarify Consistency and Accuracy:
+                      - Only flag discrepancies that cannot be explained by other sections or totals.
+                      - Do not flag items that are consistent across sections or reflect correct adjustments or credits.
+                    8. Warning: Missing Key Information:
+                      - Warning: If any key data points are missing or incomplete, flag it clearly. This includes critical information such as:
+                        - Closing Date
+                        - Disbursement Date
+                        - Seller Name
+                        - Loan amount
+                        - Load ID
+                        - Loan Term
+                        - Interest rate
+                        - Closing costs (both "At closing" and "Before closing")
+                        - Prepaid items or escrow amounts
+                        - Credits or adjustments
+                      - For example, if the "Loan Amount" or "Total Closing Costs" is not listed, issue a Warning and alert the user that this 
+                        critical information needs to be confirmed.
+                      - Similarly, if essential sections like credits, adjustments, or prepaid items are absent, Warning the user that these missing
+                        pieces may impact the accuracy of the document.
+                    9. Be Thorough, But Clear:
+                      - Provide a comprehensive analysis, but ensure the explanations are clear and easy to follow.
+                      - Use concrete references to amounts, sections, and line items (e.g., "The $500 credit from Section 2 offsets the $500 cost in Section 3").
+                      - Avoid vague terms like "negative values" or "miscellaneous adjustments."
+                    10 Final Output:
+                      - Your goal is to provide a concise, non-repetitive summary of the CDF. Only discuss items once unless further clarification is required.
+                      - The analysis should be free from unnecessary repetition and duplication, with clear references to specific figures and sections.`
+        },
+        {
+          role: "user",
+          content:  `Please review this Closing Disclosure Form (CDF) and provide a detailed analysis, focusing on the following:
+                    1. Key Financial Information:
+                      - Summarize the following key data points from the CDF:
+                        - Closing Date
+                        - Disbursement Date
+                        - Seller Name
+                        - Loan Amount
+                        - Loan ID
+                        - Loan Term
+                        - Interest Rate
+                        - Closing Costs (both "At closing" and "Before closing")
+                        - Prepaid Items or Escrow Amounts
+                        - Credits or Adjustments
+                      - Warning: If any of the above information is missing or incomplete, please clearly indicate this as a Warning and specify 
+                        what key data points are absent.
+                    2. Discrepancies or Inconsistencies:
+                       Identify any inconsistencies between the "At closing" and "Before closing" sections. Pay special attention to how the total 
+                       closing costs, credits, and other related items are presented.
+                    3. Verify Total Closing Costs:
+                      - Verify that the sum of the "At closing" and "Before closing" columns is correct. Ensure that all relevant subtotals are included, 
+                        even if they are not explicitly marked.
+                      - Warning: If the final total closing costs are missing or inconsistent, please issue a Warning and specify which data points need further review.
+                    4. Credits and Adjustments:
+                      - Identify any credits or adjustments mentioned in the form, and confirm that they are correctly applied in both the "Before closing" and "At closing" sections.
+                      - Ensure the credits are properly factored into the total closing costs and adjust the amounts accordingly.
+                    5. Detailed Discrepancy Identification:
+                      - If discrepancies or inconsistencies are found, provide specific references to the sections or line items where these issues occur. For example:
+                        - "At closing: $500 from 'Loan Costs' (line 103)"
+                        - "Before closing: $500 from 'Other Costs' (line 204)"
+                    6. Clarify Consistency and Accuracy:
+                      - Flag only discrepancies that cannot be explained by other sections or totals. If an amount appears to be accounted for correctly across both sections,
+                        do not flag it as an issue.
+                    7. Final Output:
+                      - Provide a clear and concise summary of your analysis.
+                      - Only mention unique items once, and avoid unnecessary repetition of sections or data points unless further clarification is needed.
+                      - The analysis should focus on providing actionable insights and should be based on the content of the document, referencing specific amounts and sections for clarity.
+                      - Warning: If critical sections like closing costs, loan amount, or any other key data are missing, provide a Warning and highlight the specific missing details. : ${result.text}`
+        }
+  ],
       model: "gpt-4.0",
     });
     return response.choices[0].message.content;
