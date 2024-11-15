@@ -1,7 +1,6 @@
 {
   "name": "nuxt-app",
   "private": true,
-  "type": "module",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -13,11 +12,16 @@
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.11.4",
+    "dompurify": "^3.2.0",
+    "marked": "^15.0.0",
+    "motion": "^11.11.17",
     "nuxt": "^3.13.0",
     "openai": "^4.28.0",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^3.1.4"
   },
   "devDependencies": {
-    "@types/pdf-parse": "^1.1.4"
+    "@types/pdf-parse": "^1.1.4",
+    "sass-embedded": "^1.81.0"
   }
 }
